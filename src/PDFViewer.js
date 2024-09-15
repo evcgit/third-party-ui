@@ -73,10 +73,37 @@ const PDFViewerModal = () => {
         setPageDimensions({ width, height });
     };
 
-    const handleConfirm = () => {
-        // Log the final selected coordinates when the Confirm button is clicked
-        console.log('Selected Coordinates:', selectedArea);
-        closeModal(); // Close the modal
+    const handleConfirm = async () => {
+			console.log('Selected Area:', selectedArea); // Log the selected area for debugging
+        try {
+            // Fetch the PDF file from the assets folder
+            const response = await fetch('/assets/file.pdf');
+            const fileBlob = await response.blob(); // Convert to blob
+
+            // Create a FormData object to send the PDF file and the selected box coordinates
+            const formData = new FormData();
+            formData.append('file', fileBlob, 'file.pdf'); // Add the PDF blob to the FormData
+            formData.append('x', selectedArea.x);
+            formData.append('y', selectedArea.y);
+            formData.append('width', selectedArea.width);
+            formData.append('height', selectedArea.height);
+						closeModal(); // Close the modal after confirming
+
+            // Send the data to the backend
+            const backendResponse = await fetch('http://localhost:5000/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            // Handle the response (download the modified PDF)
+            const modifiedBlob = await backendResponse.blob();
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(modifiedBlob);
+            link.download = 'modified_pdf.pdf';
+            link.click();
+        } catch (error) {
+            console.error('Error uploading PDF:', error);
+        }
     };
 
     return (
@@ -162,14 +189,14 @@ const PDFViewerModal = () => {
 
                         {/* Buttons container */}
                         <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between' }}>
-                            {/* Confirm Button */}
-                            <button onClick={handleConfirm} style={{ padding: '10px 20px' }}>
-                                Confirm Selection
-                            </button>
-
                             {/* Close Modal Button */}
                             <button onClick={closeModal} style={{ padding: '10px 20px' }}>
                                 Close
+                            </button>
+
+                            {/* Confirm Button */}
+                            <button onClick={handleConfirm} style={{ padding: '10px 20px' }}>
+                                Confirm Selection
                             </button>
                         </div>
                     </div>
